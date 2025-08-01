@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Define the namespaces
+NAMESPACES=("tc-vn-cc" "tc-vn-corp" "tc-vn-gpaslite" "tc-vn-ibs-adn" "tc-vn-gecars" "tc-vn-capital" "tc-vn-ibs-1" "tc-vn-perceptive" "tc-vn-ibs-2" "tc-vn-scx" "tc-vn-sss" "dc-portal" "dive")
+CONTAINER_NAME="tc-nifi"
+
+# Define the output directory
+OUTPUT_DIR="/mnt/c/Users/703375822/Documents/pod-disk-usage"
+mkdir -p $OUTPUT_DIR
+
+# Loop through each namespace
+for NAMESPACE in "${NAMESPACES[@]}"; do
+  # Get the list of pod names in the current namespace
+  PODS=$(kubectl get pods -n $NAMESPACE -o jsonpath='{.items[*].metadata.name}')
+  
+  # Loop through each pod and run df -h if it matches the pattern
+  for POD in $PODS; do
+    if [[ $POD == *-thread-connect-0 || $POD == *-thread-connect-1 || $POD == *-thread-connect-2 ]]; then
+      echo "Processing pod: $POD in namespace: $NAMESPACE"
+      kubectl exec -n $NAMESPACE $POD -c $CONTAINER_NAME -- df -h > $OUTPUT_DIR/$NAMESPACE-$POD-disk-usage.txt
+    fi
+  done
+done
+
+echo "Disk usage information saved to $OUTPUT_DIR"
